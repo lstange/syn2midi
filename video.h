@@ -140,11 +140,11 @@ public:
 
 		// Inform the codec that we can handle truncated bitstreams -- i.e.,
 		// bitstreams where frame boundaries can fall in the middle of packets
-		if(pCodec->capabilities & CODEC_CAP_TRUNCATED)
-			pCodecCtx->flags|=CODEC_FLAG_TRUNCATED;
+		if(pCodec->capabilities & AV_CODEC_CAP_TRUNCATED)
+			pCodecCtx->flags|=AV_CODEC_FLAG_TRUNCATED;
 
 		// Open codec
-		if(avcodec_open(pCodecCtx, pCodec)<0)
+		if(avcodec_open2(pCodecCtx, pCodec, NULL)<0)
 		{
 			printf("Could not open codec\n");
 			return; // Could not open codec
@@ -176,9 +176,9 @@ public:
 
 
 		// Allocate video frame
-		pFrame = avcodec_alloc_frame();
+		pFrame = av_frame_alloc();
 
-		pFrameRGB = avcodec_alloc_frame();
+		pFrameRGB = av_frame_alloc();
 
 		if(pFrameRGB == NULL)
 		{
@@ -187,11 +187,11 @@ public:
 		}
 
 		//Allocate memory for the raw data we get when converting.
-		numBytes = avpicture_get_size(PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
+		numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
 		buffer = (uint8_t *) av_malloc(numBytes*sizeof(uint8_t));
 
 		//Associate frame with our buffer
-		avpicture_fill((AVPicture *) pFrameRGB, buffer, PIX_FMT_RGB24,
+		avpicture_fill((AVPicture *) pFrameRGB, buffer, AV_PIX_FMT_RGB24,
 			pCodecCtx->width, pCodecCtx->height);
 
 
@@ -234,7 +234,7 @@ public:
 		avcodec_close(pCodecCtx);
 
 		// Close the video file
-		av_close_input_file(pFormatCtx);
+		avformat_close_input(&pFormatCtx);
 
 		if(img_convert_ctx)
 			sws_freeContext(img_convert_ctx);
@@ -336,7 +336,7 @@ public:
 					{
 						img_convert_ctx = sws_getContext(pCodecCtx->width,
 							pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width,
-							pCodecCtx->height, PIX_FMT_RGB24, SWS_BICUBIC, NULL,
+							pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL,
 							NULL, NULL);
 
 						if(!img_convert_ctx)
