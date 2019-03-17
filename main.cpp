@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	//int ticks = 326; int msPerTick = 184;
 	int ticks = 25; int msPerTick = 500;
 	int shiftOctave = 2;
-	int shiftNote = notes.size() == 88 ? -3 : 0;
+	int shiftNote = (notes.size() == 88) ? -3 : 0;
 	int shiftKey = shiftOctave * 12 + shiftNote;
 	miniBegin(ticks);
 	miniAddChannel(MIDI_HAND_LEFT, 0);
@@ -130,17 +130,20 @@ int main(int argc, char **argv)
 		
 		const uint32_t colorsCount = 8;
 		BufferRGBA colors[colorsCount] = {
-			BufferRGBA(40, 96, 167),
-			BufferRGBA(112, 167, 211),
-			BufferRGBA(252, 182, 92),
-			BufferRGBA(246, 126, 16),
+			BufferRGBA(0, 0, 0),  // black
+			BufferRGBA(255, 255, 255), // white
+
+			BufferRGBA(135, 169, 206), // 2
+			BufferRGBA(111, 163, 218),
+			BufferRGBA(121, 174, 225),
 			
-			BufferRGBA(237, 120, 122),
-			BufferRGBA(232, 79, 78),
-			BufferRGBA(140, 242, 44),
-			BufferRGBA(92, 170, 11)
+			BufferRGBA(161, 228, 92), // 5
+			BufferRGBA(139, 253, 10),
+			BufferRGBA(139, 255, 9)
 		};
 		uint32_t framesCount = 0;
+		printf("key,hand,x,y,r,g,b\n");
+		const char* letter[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
 		for(uint32_t f=0; video.nextFrame(frame); ++f) {
 			float ms = (float(f) / fps) * 1000;
 			int time = (ms / msPerTick) * ticks;
@@ -148,7 +151,6 @@ int main(int argc, char **argv)
 				Note &note = notes[n];
 				int key = shiftKey + n;
 				BufferRGBA color = frame(note.x * scale, note.y * scale);
-				BufferRGBA shade = color; shade.contrast(10000.0f);
 				float smallerDiff = 10000;
 				uint32_t fittestColor = 0;
 				for(uint32_t c=0; c<colorsCount; ++c) {
@@ -156,9 +158,9 @@ int main(int argc, char **argv)
 					if(diff >= smallerDiff) continue;
 					smallerDiff = diff; fittestColor = c;
 				}
-				if(shade.rgba != white.rgba && shade.rgba != black.rgba) {
+				if (fittestColor > 1) {
 					if(note.hand == MIDI_HAND_NONE) {
-						if(fittestColor < 4) {
+						if(fittestColor < 5) {
 							note.hand = MIDI_HAND_LEFT;
 							miniKeyBegin(note.hand, time, key);
 						}
@@ -166,13 +168,15 @@ int main(int argc, char **argv)
 							note.hand = MIDI_HAND_RIGHT;
 							miniKeyBegin(note.hand, time, key);
 						}
+					    printf("%d=%s%d,%s,%d,%d,%d,%d,%d\n", key, letter[key % 12], key / 12 - 1, fittestColor < 4 ? "LH" : "RH", note.x, note.y, color[0], color[1], color[2]);
 					}
-					//printf("n=%d c=%d x=%d y=%d color=<%d,%d,%d>\n", n, note.y>320, note.x, note.y, color[0], color[1], color[2]);
+//					printf("%d=%s%d,%s,%d,%d,%d,%d,%d\n", key, letter[key % 12], key / 12 - 1, "same", note.x, note.y, color[0], color[1], color[2]);
 				}
 				else {
 					if(note.hand != MIDI_HAND_NONE) {
 						miniKeyEnd(note.hand, time, key);
 						note.hand = MIDI_HAND_NONE;
+	    				printf("%d=%s%d,off,,,,,\n", key, letter[key % 12], key / 12 - 1);
 					}
 				}
 			}
